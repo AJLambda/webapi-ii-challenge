@@ -20,7 +20,6 @@ const router = express.Router();
 router.get("/", (req, res) => {
   db.find()
     .then(posts => {
-      console.log("Get all posts:", posts);
       res.json(posts);
     })
     .catch(err => {
@@ -47,7 +46,7 @@ router.get("/", (req, res) => {
 
 router.get("/:id", (req, res) => {
   const id = req.params.id;
-  console.log("req params id:", req.params.id);
+  console.log(`\n get post by id: ${id} \n`);
 
   db.findById(id)
     .then(post => {
@@ -59,10 +58,11 @@ router.get("/:id", (req, res) => {
           .json({ message: "The post with the specified ID does not exist." });
       }
     })
-    .catch(error => {
-      res
-        .status(500)
-        .json({ error: "The user information could not be retrieved." });
+    .catch(err => {
+      res.status(500).json({
+        error: err,
+        message: "The user information could not be retrieved."
+      });
     });
 });
 
@@ -94,27 +94,26 @@ router.post("/", (req, res) => {
   // one way to get data from the client is in the request's body
   // axios.post(url, data) => the data shows up as the body on the server
   const post = req.body;
-  console.log("request body:", post);
+  console.log("request body", post);
 
   if (post.title && post.contents) {
-    res.status(201).json(post);
+    db.insert(post)
+      .then(post => {
+        console.log("new post:", post);
+        res.status(201).json(post);
+      })
+      .catch(err => {
+        res.status(500).json({
+          error: err,
+          message: "There was an error while saving the post to the database"
+        });
+      });
   } else {
     res.status(400).json({
       errorMessage: "Please provide title and contents for the post."
     });
     return;
   }
-  db.insert(post)
-    .then(post => {
-      console.log("New post:", post);
-      res.status(201).json(post);
-    })
-    .catch(err => {
-      res.status(500).json({
-        error: err,
-        message: "There was an error while saving the post to the database"
-      });
-    });
 });
 
 ////////////// PUT REQUEST /////////////////
@@ -146,7 +145,7 @@ router.post("/", (req, res) => {
 
 router.put("/:id", (req, res) => {
   const { id } = req.params;
-  console.log("request params:", req.params);
+  console.log(`\n request params id: ${id} \n`);
   const updatePost = req.body;
   console.log("request body:", updatePost);
 
@@ -158,7 +157,7 @@ router.put("/:id", (req, res) => {
   if (updatePost.title && updatePost.contents) {
     db.update(id, updatePost)
       .then(updated => {
-        res.status(201).json(updated);
+        res.status(200).json(updated);
       })
       .catch(err => {
         res.status(500).json({
@@ -198,7 +197,7 @@ router.delete("/:id", (req, res) => {
   db.remove(id)
     .then(post => {
       if (post) {
-        console.log("deleted post:", post);
+        console.log(`\n deleted post: ${post} \n`);
         res.json(post);
       } else {
         res
